@@ -1,38 +1,36 @@
-name: Generate Heart Game
+name: Generate Heart Streak
 
 on:
   schedule:
-    - cron: "0 */12 * * *"   # runs every 12 hours
-  workflow_dispatch:          # allows manual run
+    - cron: "0 0 * * *" # daily
+  workflow_dispatch:
 
 permissions:
-  contents: write   # allow pushing to repo
+  contents: write
 
 jobs:
-  generate:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Generate Snake SVG
-        uses: Platane/snk/svg-only@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          github_user_name: ${{ github.repository_owner }}
-          outputs: |
-            dist/snake.svg
+          node-version: 20
 
-      - name: Make dist folder
-        run: mkdir -p dist
+      - name: Install dependencies
+        run: npm install node-fetch@2
 
-      - name: Convert Snake to Heart
-        run: |
-          cp dist/snake.svg dist/heart.svg
-          sed -i 's/🐍/❤️/g' dist/heart.svg || true
-          sed -i 's/•/💥/g' dist/heart.svg || true
+      - name: Generate Heart SVG
+        env:
+          GITHUB_USERNAME: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/generateHeartStreak.js
 
-      - name: Commit and Push
+      - name: Commit and push heart.svg
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update heart.svg"
+          commit_message: "Update heart streak animation"
           file_pattern: dist/heart.svg
