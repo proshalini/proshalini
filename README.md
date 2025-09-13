@@ -31,12 +31,6 @@
 </p>
 
 ---
-
-## ❤️ Dynamic Streak Animation
-<p align="center">
-  <img src="./dist/heart.svg" alt="Heart Streak Animation"/>
-</p>
-
 ---
 
 ## 🌐 Connect With Me  
