@@ -1,78 +1,38 @@
-name: Generate Dynamic Heart Burst
+name: Generate Heart Game
 
 on:
   schedule:
-    - cron: "0 0 * * *"   # run daily
-  workflow_dispatch:
+    - cron: "0 */12 * * *"   # runs every 12 hours
+  workflow_dispatch:          # allows manual run
+
+permissions:
+  contents: write   # allow pushing to repo
 
 jobs:
-  build:
+  generate:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Get current streak count 🔥
-        id: streak
-        run: |
-          curl -s "https://streak-stats.demolab.com?user=${{ github.repository_owner }}&type=json" -o streak.json
-          streak=$(jq '.currentStreak.length' streak.json)
-          echo "streak=$streak" >> $GITHUB_OUTPUT
-
-      - name: Generate heart burst SVG ❤️
-        run: |
-          mkdir -p dist
-          streak=${{ steps.streak.outputs.streak }}
-          burst_size=$(( 20 + streak ))
-
-          # Choose gradient based on streak
-          if [ "$streak" -lt 50 ]; then
-            gradient='<radialGradient id="grad"><stop offset="0%" stop-color="red"/><stop offset="100%" stop-color="pink"/></radialGradient>'
-          elif [ "$streak" -lt 100 ]; then
-            gradient='<radialGradient id="grad"><stop offset="0%" stop-color="gold"/><stop offset="100%" stop-color="orange"/></radialGradient>'
-          else
-            gradient='<linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="red"/>
-              <stop offset="20%" stop-color="orange"/>
-              <stop offset="40%" stop-color="yellow"/>
-              <stop offset="60%" stop-color="green"/>
-              <stop offset="80%" stop-color="blue"/>
-              <stop offset="100%" stop-color="purple"/>
-            </linearGradient>'
-          fi
-
-          cat <<EOF > dist/heart.svg
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
-            <defs>
-              $gradient
-            </defs>
-            <g>
-              <!-- Heart shape -->
-              <path d="M250 400 
-                       L100 250 
-                       A75 75 0 0 1 250 150 
-                       A75 75 0 0 1 400 250 Z"
-                    fill="url(#grad)">
-                <animateTransform attributeName="transform"
-                                  type="scale"
-                                  values="1;1.2;1"
-                                  dur="1s"
-                                  repeatCount="indefinite"/>
-              </path>
-              <!-- Dynamic Burst -->
-              <circle cx="250" cy="250" r="5" fill="gold">
-                <animate attributeName="r" values="5;${burst_size}" dur="2s" repeatCount="indefinite"/>
-                <animate attributeName="opacity" values="1;0" dur="2s" repeatCount="indefinite"/>
-              </circle>
-            </g>
-          </svg>
-          EOF
-
-      - name: Push Heart SVG
-        uses: crazy-max/ghaction-github-pages@v4
+      - name: Generate Snake SVG
+        uses: Platane/snk/svg-only@v3
         with:
-          target_branch: output
-          build_dir: dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/snake.svg
+
+      - name: Make dist folder
+        run: mkdir -p dist
+
+      - name: Convert Snake to Heart
+        run: |
+          cp dist/snake.svg dist/heart.svg
+          sed -i 's/🐍/❤️/g' dist/heart.svg || true
+          sed -i 's/•/💥/g' dist/heart.svg || true
+
+      - name: Commit and Push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update heart.svg"
+          file_pattern: dist/heart.svg
