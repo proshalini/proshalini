@@ -25,7 +25,7 @@ jobs:
 
       - name: Generate Heart SVG
         env:
-          GITHUB_USERNAME: ${{ github.repository_owner }}
+          GITHUB_USERNAME: ${{ github.proshalini }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/generateHeartStreak.js
 
